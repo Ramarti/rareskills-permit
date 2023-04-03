@@ -10,6 +10,9 @@
       Connect Wallet!
     </ConnectWalletButton>
     <div>
+      <div>Network: {{ network }}</div>
+      <div>USDC Goerli</div>
+      <div>0x07865c6E87B9F70255377e024ace6630C1Eaa37F</div>
       <div>{{ permitRequest }}</div>
       <button @click="permit">Permit</button>
     </div>
@@ -21,44 +24,54 @@
 import { useMetaMaskWallet } from "vue-connect-wallet"
 import { ref } from "vue"
 import { signPermitRequest } from "../lib/permit"
-//import ethers from 'ethers'
+import { ethers } from "ethers"
+const abi = require("../assets/usdc-abi.json")
 
 export default {
   setup() {
     const wallet = useMetaMaskWallet()
     const address = ref("")
     const signature = ref("")
-    let signer = null
-    let token = null
+    
     const permitRequest = ref("")
     permitRequest.value = {
       owner: "0x",
-      spender: "0x",
-      value: "100",
+      spender: "0xdEAdbEeF87b9F70255377E024Ace6630C1EAa37f",
+      value: ethers.utils.parseUnits("100", 6).toString(),
     }
+    const network = ref("")
     const connect = async () => {
       const accounts = await wallet.connect()
       if (typeof accounts === "string") {
         console.log("An error occurred" + accounts)
       }
       address.value = accounts[0]
-      permit.value.owner = accounts[0]
-      //signer = new ethers.JsonRpcSigner(window.ethereum, accounts[0])
+      permitRequest.value.owner = accounts[0]
+      const prov = new ethers.providers.Web3Provider(window.ethereum, "any");
+      network.value = (await prov.getNetwork()).chainId
     }
 
     const permit = async () => {
       const nonce = "0"
-      const deadline = Date.now() / 1000 + 99999999999
+      const deadline = Math.floor(Date.now() / 1000) + 99999999999
+      const prov = new ethers.providers.Web3Provider(window.ethereum, "any");
+      const signer = await prov.getSigner()
+      const t = new ethers.Contract(
+        "0x07865c6E87B9F70255377e024ace6630C1Eaa37F",
+        abi,
+        signer
+      )
+      console.log(t)
       const sig = await signPermitRequest(
-        token,
         signer,
+        Number(network.value),
         permitRequest.value.owner,
         permitRequest.value.spender,
         permitRequest.value.value,
         nonce,
         deadline
       )
-      sig.value = sig
+      signature.value = sig
     }
 
     return {
@@ -66,10 +79,9 @@ export default {
       connect,
       address,
       permit,
-      token,
-      signer,
       signature,
       permitRequest,
+      network,
     }
   },
 }

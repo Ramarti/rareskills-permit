@@ -1,20 +1,18 @@
 
 async function signPermitRequest(
-  token,
   signer,
+  chainId,
   owner,
   spender,
   value,
   nonce,
   deadline
 ) {
-  const chainId = (await token.getChainId()).toNumber()
-  const name = await token.name()
   const domain = {
-    name: name,
+    name: 'USD Coin',
     version: "1",
     chainId: chainId,
-    verifyingContract: token.address,
+    verifyingContract: "0x07865c6E87B9F70255377e024ace6630C1Eaa37F",
   }
 
   const types = {
